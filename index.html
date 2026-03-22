@@ -20,7 +20,6 @@
             flex-direction: column;
         }
 
-        /* header section */
         .header {
             background: rgba(0, 0, 0, 0.65);
             backdrop-filter: blur(6px);
@@ -65,7 +64,6 @@
             backdrop-filter: blur(2px);
         }
 
-        /* main container */
         .app-container {
             display: flex;
             flex: 1;
@@ -73,7 +71,6 @@
             overflow: hidden;
         }
 
-        /* Surah List Sidebar */
         .surah-sidebar {
             width: 280px;
             background: #0e2a24e6;
@@ -125,7 +122,6 @@
             opacity: 0.8;
         }
 
-        /* Quran content */
         .quran-content {
             flex: 1;
             overflow-y: auto;
@@ -161,6 +157,7 @@
             flex-wrap: wrap;
             border: 1px solid #4a8b78;
             box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+            cursor: pointer;
         }
 
         .ayah-card.highlighted {
@@ -218,7 +215,6 @@
             transform: scale(1.05);
         }
 
-        /* control bar */
         .control-bar {
             background: #08261fcc;
             padding: 0.8rem 2rem;
@@ -259,7 +255,6 @@
             font-size: 0.85rem;
         }
 
-        /* scroll */
         ::-webkit-scrollbar {
             width: 8px;
         }
@@ -294,16 +289,13 @@
 </div>
 
 <div class="app-container">
-    <!-- قائمة السور -->
     <div class="surah-sidebar">
         <h3>📑 السور المباركة</h3>
         <div id="surahListContainer" class="surah-list">
-            <!-- سيتم تعبئتها عبر JS -->
             <div style="text-align:center; padding:1rem;">جاري تحميل السور...</div>
         </div>
     </div>
 
-    <!-- عرض الآيات -->
     <div class="quran-content" id="quranContent">
         <div style="text-align:center; padding:2rem;">اختر سورة من القائمة لعرض الآيات الكريمة</div>
     </div>
@@ -317,44 +309,44 @@
 
 <script>
     // --------------------------------------------------------------
-    // API Base URLs
-    const API_SURAH_LIST = "https://api.alquran.cloud/v1/surah";
-    const API_AYAH_BY_SURAH = (surahNum) => `https://api.alquran.cloud/v1/surah/${surahNum}/editions/quran-uthmani`;
+    // استخدام API quran.com المجاني والموثوق (بديل عن alquran.cloud)
+    const API_CHAPTERS = "https://api.quran.com/api/v4/chapters?language=ar";
+    const API_VERSES = (chapterId) => `https://api.quran.com/api/v4/verses/by_chapter/${chapterId}?words=false&language=ar&text_type=uthmani&fields=text_uthmani&per_page=500`;
 
     // Global state
-    let currentSurahId = 1;          // الفاتحة
-    let currentAyahs = [];            // array of { number, text }
-    let currentActiveAyahIndex = 0;   // للقراءة المساعد
+    let currentSurahId = 1;          
+    let currentAyahs = [];            
+    let currentActiveAyahIndex = 0;   
     let currentAudio = null;
     let recognition = null;
     let isListening = false;
 
     // Helper: normalize arabic (remove diacritics & special chars)
     function normalizeArabicText(str) {
-        return str.normalize("NFD").replace(/[\u064B-\u065F\u0670]/g, "")  // remove tashkeel
+        return str.normalize("NFD").replace(/[\u064B-\u065F\u0670]/g, "")
                   .replace(/[ًٌٍَُِّْٰ]/g, "")
                   .replace(/[،؛؟]/g, "")
                   .trim();
     }
 
-    // تحميل قائمة السور
+    // تحميل قائمة السور من quran.com API
     async function loadSurahList() {
         try {
-            const response = await fetch(API_SURAH_LIST);
+            const response = await fetch(API_CHAPTERS);
             const data = await response.json();
-            if (data.code === 200 && data.data) {
-                const surahs = data.data;
+            if (data && data.chapters) {
+                const surahs = data.chapters;
                 const container = document.getElementById('surahListContainer');
                 container.innerHTML = '';
                 surahs.forEach(surah => {
                     const li = document.createElement('li');
                     li.className = 'surah-item';
-                    if (surah.number === currentSurahId) li.classList.add('active');
-                    li.innerHTML = `<span>${surah.number}. ${surah.name}</span><span class="surah-number">${surah.englishName}</span>`;
+                    if (surah.id === currentSurahId) li.classList.add('active');
+                    li.innerHTML = `<span>${surah.id}. ${surah.name_arabic}</span><span class="surah-number">${surah.name_simple}</span>`;
                     li.addEventListener('click', () => {
                         document.querySelectorAll('.surah-item').forEach(el => el.classList.remove('active'));
                         li.classList.add('active');
-                        currentSurahId = surah.number;
+                        currentSurahId = surah.id;
                         loadAyahs(currentSurahId);
                     });
                     container.appendChild(li);
@@ -366,20 +358,19 @@
         }
     }
 
-    // تحميل الآيات لسورة محددة
+    // تحميل الآيات لسورة محددة من quran.com API
     async function loadAyahs(surahNumber) {
         const contentDiv = document.getElementById('quranContent');
         contentDiv.innerHTML = '<div style="text-align:center; padding:2rem;">⏳ جاري تحميل الآيات...</div>';
         try {
-            const response = await fetch(API_AYAH_BY_SURAH(surahNumber));
+            const response = await fetch(API_VERSES(surahNumber));
             const data = await response.json();
-            if (data.code === 200 && data.data.length > 0) {
-                const edition = data.data.find(ed => ed.identifier === 'quran-uthmani') || data.data[0];
-                const ayahs = edition.ayahs;
-                currentAyahs = ayahs.map(ayah => ({
-                    number: ayah.numberInSurah,
-                    text: ayah.text,
-                    fullKey: `${surahNumber}:${ayah.numberInSurah}`
+            if (data && data.verses) {
+                const verses = data.verses;
+                currentAyahs = verses.map(verse => ({
+                    number: verse.verse_number,
+                    text: verse.text_uthmani,
+                    fullKey: `${surahNumber}:${verse.verse_number}`
                 }));
                 renderAyahs(currentAyahs, surahNumber);
             } else throw new Error('فشل تحميل الآيات');
@@ -396,14 +387,19 @@
             contentDiv.innerHTML = '<div style="text-align:center;">لا توجد آيات</div>';
             return;
         }
-        const surahName = document.querySelector('.surah-item.active') ? 
-            document.querySelector('.surah-item.active').innerText.split(' ')[1] : `السورة ${surahId}`;
+        const activeSurahElem = document.querySelector('.surah-item.active');
+        let surahName = `السورة ${surahId}`;
+        if (activeSurahElem) {
+            const parts = activeSurahElem.innerText.split('.');
+            if (parts.length > 1) surahName = parts[1].trim();
+        }
         
-        let html = `<div style="text-align:center;"><h2 class="surah-title">📖 ${surahName} - سورة رقم ${surahId}</h2></div>`;
+        let html = `<div style="text-align:center;"><h2 class="surah-title">📖 ${surahName}</h2></div>`;
         html += `<div class="ayah-container" id="ayahContainer">`;
         ayahs.forEach((ayah, idx) => {
+            const normalized = normalizeArabicText(ayah.text).replace(/"/g, '&quot;');
             html += `
-                <div class="ayah-card" data-ayah-index="${idx}" data-surah="${surahId}" data-ayah="${ayah.number}" data-text-normal="${normalizeArabicText(ayah.text).replace(/"/g, '&quot;')}">
+                <div class="ayah-card" data-ayah-index="${idx}" data-surah="${surahId}" data-ayah="${ayah.number}" data-text-normal="${normalized}">
                     <div class="ayah-number">${ayah.number}</div>
                     <div class="ayah-text">${ayah.text}</div>
                     <div style="display:flex; gap:5px;">
@@ -428,18 +424,15 @@
         // إضافة خاصية النقر على الآية لتعيينها كآية نشطة للمساعد
         document.querySelectorAll('.ayah-card').forEach(card => {
             card.addEventListener('click', (e) => {
-                // منع التداخل مع الأزرار
                 if(e.target.classList.contains('audio-icon')) return;
                 const idx = parseInt(card.getAttribute('data-ayah-index'));
                 setActiveAyah(idx);
             });
         });
 
-        // تعيين أول آية كنشطة بشكل افتراضي
         if(ayahs.length) setActiveAyah(0);
     }
 
-    // تعيين الآية النشطة (للقراءة المساعد)
     function setActiveAyah(index) {
         const cards = document.querySelectorAll('.ayah-card');
         if(!cards.length) return;
@@ -456,7 +449,6 @@
             currentAudio.pause();
             currentAudio = null;
         }
-        // صيغة الرابط: https://cdn.islamic.network/quran/audio/128/ar.alafasy/xxx.mp3
         const surahPadded = String(surah).padStart(3, '0');
         const ayahPadded = String(ayahNumber).padStart(3, '0');
         const audioUrl = `https://cdn.islamic.network/quran/audio/128/ar.alafasy/${surahPadded}${ayahPadded}.mp3`;
@@ -490,7 +482,7 @@
         }
     }
 
-    // ------------------- وظيفة التعرف الصوتي والمطابقة الذكية ------------------
+    // التعرف الصوتي والمطابقة الذكية
     function startVoiceRecognition() {
         if (!('webkitSpeechRecognition' in window) && !('SpeechRecognition' in window)) {
             alert("عذراً، متصفحك لا يدعم خاصية التعرف الصوتي. استخدم Chrome أو Edge.");
@@ -500,6 +492,7 @@
             if (recognition) recognition.abort();
             isListening = false;
             document.getElementById('voiceStatus').innerHTML = "🎤 المايك متوقف، اضغط للبدء";
+            document.getElementById('micGlobalBtn').style.background = "#2c7a64";
             return;
         }
         const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
@@ -528,7 +521,6 @@
         };
         recognition.onresult = (event) => {
             const transcript = event.results[0][0].transcript;
-            const confidence = event.results[0][0].confidence;
             console.log("النص المتعرف عليه:", transcript);
             document.getElementById('voiceStatus').innerHTML = `📝 تم التعرف: "${transcript}" - جارٍ التلوين...`;
             matchAndHighlightAyah(transcript);
@@ -536,7 +528,6 @@
         recognition.start();
     }
 
-    // مطابقة النص مع الآيات المعروضة حاليًا وتلوينها باللون الأزرق
     function matchAndHighlightAyah(spokenText) {
         if (!currentAyahs.length) {
             document.getElementById('voiceStatus').innerHTML = "⚠️ لا توجد آيات معروضة حالياً";
@@ -550,11 +541,59 @@
         let bestMatchIndex = -1;
         let bestScore = 0;
 
-        // لكل آية معروضة نقارن
         currentAyahs.forEach((ayah, idx) => {
             const ayahNorm = normalizeArabicText(ayah.text);
-            // معامل المطابقة: نسبة التشابه بناءً على احتواء النص الأطول للنص الأقصر + نسبة الطول
             let score = 0;
             if (ayahNorm.includes(normalizedSpoken) || normalizedSpoken.includes(ayahNorm)) {
-                // تطابق جزئي أو كلي
-                const lenRatio = Math.min(ayahNorm.length, normalizedSpoken.length) / Math.max(ayahNorm
+                const lenRatio = Math.min(ayahNorm.length, normalizedSpoken.length) / Math.max(ayahNorm.length, normalizedSpoken.length);
+                score = 0.9 + lenRatio * 0.1;
+            } else {
+                const wordsAyah = ayahNorm.split(/\s+/);
+                const wordsSpoken = normalizedSpoken.split(/\s+/);
+                let common = 0;
+                for (let w of wordsSpoken) {
+                    if (w.length > 2 && ayahNorm.includes(w)) common++;
+                }
+                score = common / Math.max(wordsAyah.length, 1) * 0.8;
+            }
+            if (score > bestScore) {
+                bestScore = score;
+                bestMatchIndex = idx;
+            }
+        });
+
+        if (bestMatchIndex !== -1 && bestScore > 0.35) {
+            highlightAyah(bestMatchIndex);
+            document.getElementById('voiceStatus').innerHTML = `✅ تم تلوين الآية ${currentAyahs[bestMatchIndex].number} باللون الأزرق`;
+            const cards = document.querySelectorAll('.ayah-card');
+            if(cards[bestMatchIndex]) cards[bestMatchIndex].scrollIntoView({ behavior: 'smooth', block: 'center' });
+        } else {
+            document.getElementById('voiceStatus').innerHTML = "⚠️ لم نتعرف على الآية بدقة، حاول قراءة أوضح أو آية أخرى";
+        }
+    }
+
+    function highlightAyah(index) {
+        const cards = document.querySelectorAll('.ayah-card');
+        cards.forEach(card => card.classList.remove('highlighted'));
+        if (cards[index]) {
+            cards[index].classList.add('highlighted');
+            setActiveAyah(index);
+        }
+    }
+
+    // إضافة مستمع المايك العام
+    document.getElementById('micGlobalBtn').addEventListener('click', startVoiceRecognition);
+    document.getElementById('readingAssistantBtn').addEventListener('click', () => {
+        if(currentAyahs.length) playActiveAyah();
+        else alert("الرجاء تحميل سورة أولاً");
+    });
+
+    // تهيئة التطبيق
+    async function init() {
+        await loadSurahList();
+        await loadAyahs(1);
+    }
+    init();
+</script>
+</body>
+</html>
