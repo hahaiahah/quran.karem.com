@@ -1,0 +1,560 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+    <title>القرآن الكريم - تلاوة وترتيل مع المساعد الذكي</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', 'Amiri', 'Traditional Arabic', 'Tahoma', sans-serif;
+            background: linear-gradient(135deg, #0f2b2d 0%, #1a4a3a 100%);
+            color: #f5f2e8;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* header section */
+        .header {
+            background: rgba(0, 0, 0, 0.65);
+            backdrop-filter: blur(6px);
+            padding: 1rem 2rem;
+            border-bottom: 2px solid #d4af37;
+            text-align: center;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+        }
+
+        .header h1 {
+            font-size: 2.2rem;
+            letter-spacing: 2px;
+            color: #ffd966;
+            text-shadow: 2px 2px 4px #00000055;
+        }
+
+        .dev-info {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 1.5rem;
+            margin-top: 0.5rem;
+            font-size: 1rem;
+            color: #e0e0e0;
+        }
+
+        .dev-info span {
+            background: #2c5a4e;
+            padding: 0.2rem 1rem;
+            border-radius: 40px;
+            font-weight: bold;
+        }
+
+        .dedication {
+            margin-top: 0.6rem;
+            font-style: italic;
+            background: #2e5e4eaa;
+            display: inline-block;
+            padding: 0.3rem 1.2rem;
+            border-radius: 50px;
+            font-size: 0.9rem;
+            backdrop-filter: blur(2px);
+        }
+
+        /* main container */
+        .app-container {
+            display: flex;
+            flex: 1;
+            height: calc(100vh - 140px);
+            overflow: hidden;
+        }
+
+        /* Surah List Sidebar */
+        .surah-sidebar {
+            width: 280px;
+            background: #0e2a24e6;
+            backdrop-filter: blur(4px);
+            overflow-y: auto;
+            border-left: 1px solid #d4af37;
+            box-shadow: 4px 0 12px rgba(0,0,0,0.2);
+            z-index: 2;
+        }
+
+        .surah-sidebar h3 {
+            text-align: center;
+            padding: 1rem;
+            background: #1a3f38;
+            border-bottom: 1px solid #d4af37;
+            font-size: 1.3rem;
+        }
+
+        .surah-list {
+            list-style: none;
+            padding: 0.5rem 0;
+        }
+
+        .surah-item {
+            padding: 0.8rem 1.2rem;
+            cursor: pointer;
+            border-bottom: 1px solid #2f6b5c;
+            transition: all 0.2s;
+            font-size: 1rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: baseline;
+        }
+
+        .surah-item:hover {
+            background: #2c7a64;
+            transform: translateX(-4px);
+        }
+
+        .surah-item.active {
+            background: #d4af37;
+            color: #0a2e26;
+            font-weight: bold;
+            border-right: 4px solid white;
+        }
+
+        .surah-number {
+            font-size: 0.8rem;
+            opacity: 0.8;
+        }
+
+        /* Quran content */
+        .quran-content {
+            flex: 1;
+            overflow-y: auto;
+            padding: 1.2rem 2rem;
+            background: rgba(15, 35, 30, 0.75);
+            backdrop-filter: blur(2px);
+        }
+
+        .surah-title {
+            font-size: 2rem;
+            text-align: center;
+            margin-bottom: 1.5rem;
+            border-bottom: 2px solid #d4af37;
+            display: inline-block;
+            width: auto;
+            padding-bottom: 0.5rem;
+        }
+
+        .ayah-container {
+            display: flex;
+            flex-direction: column;
+            gap: 0.8rem;
+        }
+
+        .ayah-card {
+            background: #1f3e38aa;
+            border-radius: 20px;
+            padding: 0.8rem 1.5rem;
+            transition: 0.2s;
+            display: flex;
+            align-items: flex-start;
+            gap: 1rem;
+            flex-wrap: wrap;
+            border: 1px solid #4a8b78;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+        }
+
+        .ayah-card.highlighted {
+            background: #1e88e5cc;
+            border: 2px solid #ffec80;
+            color: white;
+            box-shadow: 0 0 12px #ffd966aa;
+        }
+
+        .ayah-card.selected {
+            background: #f0b27acc;
+            border-right: 6px solid #ffc107;
+        }
+
+        .ayah-number {
+            font-weight: bold;
+            background: #d4af37;
+            color: #1a3a32;
+            border-radius: 50px;
+            width: 2.4rem;
+            height: 2.4rem;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1rem;
+            flex-shrink: 0;
+        }
+
+        .ayah-text {
+            flex: 1;
+            font-size: 1.4rem;
+            line-height: 1.8;
+            font-family: 'Amiri', 'Traditional Arabic', serif;
+            word-spacing: 2px;
+        }
+
+        .audio-icon, .mic-icon-small {
+            background: #2c7a64;
+            border: none;
+            color: white;
+            border-radius: 50%;
+            width: 38px;
+            height: 38px;
+            font-size: 1.2rem;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            transition: 0.2s;
+            margin: 0 4px;
+        }
+
+        .audio-icon:hover, .mic-icon-small:hover {
+            background: #ffb347;
+            transform: scale(1.05);
+        }
+
+        /* control bar */
+        .control-bar {
+            background: #08261fcc;
+            padding: 0.8rem 2rem;
+            display: flex;
+            justify-content: center;
+            gap: 2rem;
+            border-top: 1px solid #d4af37;
+            backdrop-filter: blur(8px);
+            z-index: 5;
+        }
+
+        .control-btn {
+            background: #2c7a64;
+            border: none;
+            color: white;
+            font-size: 1.2rem;
+            padding: 0.6rem 1.8rem;
+            border-radius: 60px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-weight: bold;
+            transition: 0.2s;
+            box-shadow: 0 2px 8px black;
+        }
+
+        .control-btn:hover {
+            background: #d4af37;
+            color: #0a2e26;
+            transform: translateY(-2px);
+        }
+
+        .status-msg {
+            background: #000000aa;
+            padding: 0.2rem 1rem;
+            border-radius: 40px;
+            font-size: 0.85rem;
+        }
+
+        /* scroll */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #1f4a3e;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #d4af37;
+            border-radius: 10px;
+        }
+
+        @media (max-width: 700px) {
+            .surah-sidebar { width: 230px; }
+            .ayah-text { font-size: 1.1rem; }
+            .control-btn { padding: 0.4rem 1rem; font-size: 0.9rem; }
+            .dev-info span { font-size: 0.7rem; }
+        }
+    </style>
+</head>
+<body>
+
+<div class="header">
+    <h1>📖 القرآن الكريم</h1>
+    <div class="dev-info">
+        <span>💎 المطور والمصمم: حسين محمد الأطرش</span>
+        <span>🌟 المساعدين: نانسي محمد الأطرش</span>
+    </div>
+    <div class="dedication">
+        💐 إهداء خاص إلى أمي الحبيبة فاطمة منذر 💐 <br>
+        جعل الله هذا العمل في ميزان حسناتكِ، وجنة الفردوس مقامكِ.
+    </div>
+</div>
+
+<div class="app-container">
+    <!-- قائمة السور -->
+    <div class="surah-sidebar">
+        <h3>📑 السور المباركة</h3>
+        <div id="surahListContainer" class="surah-list">
+            <!-- سيتم تعبئتها عبر JS -->
+            <div style="text-align:center; padding:1rem;">جاري تحميل السور...</div>
+        </div>
+    </div>
+
+    <!-- عرض الآيات -->
+    <div class="quran-content" id="quranContent">
+        <div style="text-align:center; padding:2rem;">اختر سورة من القائمة لعرض الآيات الكريمة</div>
+    </div>
+</div>
+
+<div class="control-bar">
+    <button id="micGlobalBtn" class="control-btn">🎙️ المايك (قراءة ذكية)</button>
+    <button id="readingAssistantBtn" class="control-btn">📢 مساعد القراءة</button>
+    <div id="voiceStatus" class="status-msg">⚡ اضغط المايك واقرأ الآية لتلوينها أزرق</div>
+</div>
+
+<script>
+    // --------------------------------------------------------------
+    // API Base URLs
+    const API_SURAH_LIST = "https://api.alquran.cloud/v1/surah";
+    const API_AYAH_BY_SURAH = (surahNum) => `https://api.alquran.cloud/v1/surah/${surahNum}/editions/quran-uthmani`;
+
+    // Global state
+    let currentSurahId = 1;          // الفاتحة
+    let currentAyahs = [];            // array of { number, text }
+    let currentActiveAyahIndex = 0;   // للقراءة المساعد
+    let currentAudio = null;
+    let recognition = null;
+    let isListening = false;
+
+    // Helper: normalize arabic (remove diacritics & special chars)
+    function normalizeArabicText(str) {
+        return str.normalize("NFD").replace(/[\u064B-\u065F\u0670]/g, "")  // remove tashkeel
+                  .replace(/[ًٌٍَُِّْٰ]/g, "")
+                  .replace(/[،؛؟]/g, "")
+                  .trim();
+    }
+
+    // تحميل قائمة السور
+    async function loadSurahList() {
+        try {
+            const response = await fetch(API_SURAH_LIST);
+            const data = await response.json();
+            if (data.code === 200 && data.data) {
+                const surahs = data.data;
+                const container = document.getElementById('surahListContainer');
+                container.innerHTML = '';
+                surahs.forEach(surah => {
+                    const li = document.createElement('li');
+                    li.className = 'surah-item';
+                    if (surah.number === currentSurahId) li.classList.add('active');
+                    li.innerHTML = `<span>${surah.number}. ${surah.name}</span><span class="surah-number">${surah.englishName}</span>`;
+                    li.addEventListener('click', () => {
+                        document.querySelectorAll('.surah-item').forEach(el => el.classList.remove('active'));
+                        li.classList.add('active');
+                        currentSurahId = surah.number;
+                        loadAyahs(currentSurahId);
+                    });
+                    container.appendChild(li);
+                });
+            } else throw new Error('فشل تحميل السور');
+        } catch (err) {
+            console.error(err);
+            document.getElementById('surahListContainer').innerHTML = '<div style="color:red;">خطأ في تحميل السور، تأكد من الاتصال بالإنترنت</div>';
+        }
+    }
+
+    // تحميل الآيات لسورة محددة
+    async function loadAyahs(surahNumber) {
+        const contentDiv = document.getElementById('quranContent');
+        contentDiv.innerHTML = '<div style="text-align:center; padding:2rem;">⏳ جاري تحميل الآيات...</div>';
+        try {
+            const response = await fetch(API_AYAH_BY_SURAH(surahNumber));
+            const data = await response.json();
+            if (data.code === 200 && data.data.length > 0) {
+                const edition = data.data.find(ed => ed.identifier === 'quran-uthmani') || data.data[0];
+                const ayahs = edition.ayahs;
+                currentAyahs = ayahs.map(ayah => ({
+                    number: ayah.numberInSurah,
+                    text: ayah.text,
+                    fullKey: `${surahNumber}:${ayah.numberInSurah}`
+                }));
+                renderAyahs(currentAyahs, surahNumber);
+            } else throw new Error('فشل تحميل الآيات');
+        } catch (err) {
+            console.error(err);
+            contentDiv.innerHTML = '<div style="color:#ffaaaa; text-align:center;">حدث خطأ في تحميل الآيات، يرجى المحاولة مجدداً</div>';
+        }
+    }
+
+    // عرض الآيات مع أيقونات الصوت لكل آية
+    function renderAyahs(ayahs, surahId) {
+        const contentDiv = document.getElementById('quranContent');
+        if (!ayahs.length) {
+            contentDiv.innerHTML = '<div style="text-align:center;">لا توجد آيات</div>';
+            return;
+        }
+        const surahName = document.querySelector('.surah-item.active') ? 
+            document.querySelector('.surah-item.active').innerText.split(' ')[1] : `السورة ${surahId}`;
+        
+        let html = `<div style="text-align:center;"><h2 class="surah-title">📖 ${surahName} - سورة رقم ${surahId}</h2></div>`;
+        html += `<div class="ayah-container" id="ayahContainer">`;
+        ayahs.forEach((ayah, idx) => {
+            html += `
+                <div class="ayah-card" data-ayah-index="${idx}" data-surah="${surahId}" data-ayah="${ayah.number}" data-text-normal="${normalizeArabicText(ayah.text).replace(/"/g, '&quot;')}">
+                    <div class="ayah-number">${ayah.number}</div>
+                    <div class="ayah-text">${ayah.text}</div>
+                    <div style="display:flex; gap:5px;">
+                        <button class="audio-icon" data-surah="${surahId}" data-ayah="${ayah.number}" title="استماع التلاوة">🔊</button>
+                    </div>
+                </div>
+            `;
+        });
+        html += `</div>`;
+        contentDiv.innerHTML = html;
+
+        // إضافة مستمعين لأزرار الصوت الفردية
+        document.querySelectorAll('.audio-icon').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                const surah = parseInt(btn.getAttribute('data-surah'));
+                const ayah = parseInt(btn.getAttribute('data-ayah'));
+                playAyahAudio(surah, ayah);
+            });
+        });
+
+        // إضافة خاصية النقر على الآية لتعيينها كآية نشطة للمساعد
+        document.querySelectorAll('.ayah-card').forEach(card => {
+            card.addEventListener('click', (e) => {
+                // منع التداخل مع الأزرار
+                if(e.target.classList.contains('audio-icon')) return;
+                const idx = parseInt(card.getAttribute('data-ayah-index'));
+                setActiveAyah(idx);
+            });
+        });
+
+        // تعيين أول آية كنشطة بشكل افتراضي
+        if(ayahs.length) setActiveAyah(0);
+    }
+
+    // تعيين الآية النشطة (للقراءة المساعد)
+    function setActiveAyah(index) {
+        const cards = document.querySelectorAll('.ayah-card');
+        if(!cards.length) return;
+        cards.forEach(card => card.classList.remove('selected'));
+        if(cards[index]) {
+            cards[index].classList.add('selected');
+            currentActiveAyahIndex = index;
+        }
+    }
+
+    // تشغيل صوت الآية عبر API مجاني (شبكة إسلامية)
+    function playAyahAudio(surah, ayahNumber) {
+        if (currentAudio) {
+            currentAudio.pause();
+            currentAudio = null;
+        }
+        // صيغة الرابط: https://cdn.islamic.network/quran/audio/128/ar.alafasy/xxx.mp3
+        const surahPadded = String(surah).padStart(3, '0');
+        const ayahPadded = String(ayahNumber).padStart(3, '0');
+        const audioUrl = `https://cdn.islamic.network/quran/audio/128/ar.alafasy/${surahPadded}${ayahPadded}.mp3`;
+        const audio = new Audio(audioUrl);
+        audio.addEventListener('error', () => {
+            console.warn("فشل في تشغيل الصوت من المصدر الأساسي");
+            alert("⚠️ تعذر تحميل تلاوة هذه الآية، تأكد من اتصال الإنترنت أو جرب آية أخرى.");
+        });
+        audio.play().catch(e => console.warn("Auto-play policy?"));
+        currentAudio = audio;
+        audio.onended = () => { currentAudio = null; };
+    }
+
+    // مساعد القراءة: تشغيل صوت الآية النشطة
+    function playActiveAyah() {
+        const activeCard = document.querySelector('.ayah-card.selected');
+        if (!activeCard) {
+            if(currentAyahs.length) setActiveAyah(0);
+            const newCard = document.querySelector('.ayah-card.selected');
+            if(newCard) {
+                const surah = parseInt(newCard.getAttribute('data-surah'));
+                const ayah = parseInt(newCard.getAttribute('data-ayah'));
+                playAyahAudio(surah, ayah);
+            } else {
+                alert("الرجاء اختيار آية بالضغط عليها أولاً");
+            }
+        } else {
+            const surah = parseInt(activeCard.getAttribute('data-surah'));
+            const ayah = parseInt(activeCard.getAttribute('data-ayah'));
+            playAyahAudio(surah, ayah);
+        }
+    }
+
+    // ------------------- وظيفة التعرف الصوتي والمطابقة الذكية ------------------
+    function startVoiceRecognition() {
+        if (!('webkitSpeechRecognition' in window) && !('SpeechRecognition' in window)) {
+            alert("عذراً، متصفحك لا يدعم خاصية التعرف الصوتي. استخدم Chrome أو Edge.");
+            return;
+        }
+        if (isListening) {
+            if (recognition) recognition.abort();
+            isListening = false;
+            document.getElementById('voiceStatus').innerHTML = "🎤 المايك متوقف، اضغط للبدء";
+            return;
+        }
+        const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+        recognition = new SpeechRecognition();
+        recognition.lang = 'ar-SA';
+        recognition.interimResults = false;
+        recognition.maxAlternatives = 1;
+        recognition.continuous = false;
+
+        recognition.onstart = () => {
+            isListening = true;
+            document.getElementById('voiceStatus').innerHTML = "🎙️ جاري الاستماع... اقرأ الآية بوضوح";
+            document.getElementById('micGlobalBtn').style.background = "#ffb347";
+        };
+        recognition.onerror = (event) => {
+            console.error("Speech error", event.error);
+            isListening = false;
+            document.getElementById('voiceStatus').innerHTML = "❌ خطأ في المايك، حاول مجدداً";
+            document.getElementById('micGlobalBtn').style.background = "#2c7a64";
+        };
+        recognition.onend = () => {
+            isListening = false;
+            document.getElementById('micGlobalBtn').style.background = "#2c7a64";
+            if(document.getElementById('voiceStatus').innerHTML.includes("جاري الاستماع"))
+                document.getElementById('voiceStatus').innerHTML = "⏹️ انتهى الاستماع، يتم البحث عن الآية...";
+        };
+        recognition.onresult = (event) => {
+            const transcript = event.results[0][0].transcript;
+            const confidence = event.results[0][0].confidence;
+            console.log("النص المتعرف عليه:", transcript);
+            document.getElementById('voiceStatus').innerHTML = `📝 تم التعرف: "${transcript}" - جارٍ التلوين...`;
+            matchAndHighlightAyah(transcript);
+        };
+        recognition.start();
+    }
+
+    // مطابقة النص مع الآيات المعروضة حاليًا وتلوينها باللون الأزرق
+    function matchAndHighlightAyah(spokenText) {
+        if (!currentAyahs.length) {
+            document.getElementById('voiceStatus').innerHTML = "⚠️ لا توجد آيات معروضة حالياً";
+            return;
+        }
+        const normalizedSpoken = normalizeArabicText(spokenText);
+        if (normalizedSpoken.length < 3) {
+            document.getElementById('voiceStatus').innerHTML = "⚠️ النص قصير جداً، حاول قراءة آية كاملة";
+            return;
+        }
+        let bestMatchIndex = -1;
+        let bestScore = 0;
+
+        // لكل آية معروضة نقارن
+        currentAyahs.forEach((ayah, idx) => {
+            const ayahNorm = normalizeArabicText(ayah.text);
+            // معامل المطابقة: نسبة التشابه بناءً على احتواء النص الأطول للنص الأقصر + نسبة الطول
+            let score = 0;
+            if (ayahNorm.includes(normalizedSpoken) || normalizedSpoken.includes(ayahNorm)) {
+                // تطابق جزئي أو كلي
+                const lenRatio = Math.min(ayahNorm.length, normalizedSpoken.length) / Math.max(ayahNorm
